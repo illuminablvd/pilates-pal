@@ -15,5 +15,236 @@ section{padding:110px 0}.no-break{white-space:nowrap}.intro{max-width:610px;marg
 <section class="shell"><h2>Thoughtful support at <span class="no-break">every step.</span></h2><p class="intro">Three focused capabilities handle common member requests without making the experience feel automated.</p><div class="capabilities"><article class="cap-card"><img class="cap-photo" src="capability-schedule.png" alt="A serene Pilates studio prepared for schedule-aware assistance."><div class="cap-content"><h3>Schedule-aware recommendations</h3><p>Connects availability, class level, preferred times, and member needs in one calm conversation.</p></div></article><article class="cap-card"><img class="cap-photo" src="capability-reminders.png" alt="A phone, grip socks, and water bottle ready beside a Pilates reformer."><div class="cap-content"><h3>Gentle reminders</h3><p>Sends timely confirmations and reminders through WhatsApp or email.</p></div></article><article class="cap-card"><img class="cap-photo" src="capability-waitlist.png" alt="An open Pilates reformer ready for the next waitlisted member."><div class="cap-content"><h3>Active waitlists</h3><p>Offers newly available spots to waiting members when plans change.</p></div></article></div></section>
 <section class="chat-section" id="demo"><div class="shell"><h2>See PilatesPal in motion.</h2><p class="intro">Choose a common studio request and watch the assistant guide the conversation.</p><div class="simulator"><div class="scenarios" aria-label="Chat scenarios"><button class="scenario" data-key="book" aria-pressed="false">Book a beginner class</button><button class="scenario" data-key="move" aria-pressed="false">Move my Thursday session</button><button class="scenario" data-key="wait" aria-pressed="false">Find an after-work class</button></div><div class="chat-box" aria-live="polite"><div class="chat-head"><span class="mini-avatar">P</span>PilatesPal</div><div id="messages"><div class="message agent show">Choose a scenario and I will help arrange your session.</div></div></div></div></div></section></main>
 <footer class="footer-visual"><img class="footer-image" src="footer-conversation.png" alt="A Pilates instructor reaching for her phone after class."><div class="footer-content shell"><div><h2>Your next class is one conversation away.</h2><p>Connect the studio's WhatsApp number when you are ready to launch.</p><a class="button" href="#" id="whatsapp">Chat with PilatesPal</a><p class="credit">Built with AI · AI Builder Bootcamp Showcase</p></div></div></footer>
+<p id="supabase-test-output" style="padding: 20px; text-align: center;">
+  Checking live class schedule...
+</p>
 <script>const conversations={book:{user:"Can I book a beginner Reformer class this Saturday?",agent:"Yes. The 10:00 AM beginner class has availability. I can reserve your spot and send a reminder."},move:{user:"Please move my Thursday evening session.",agent:"Of course. Friday at 6:00 PM is available, and I can offer your Thursday spot to the waitlist."},wait:{user:"Find me a class after work next week.",agent:"I found Reformer sessions at 6:00 PM on Tuesday and Thursday. Which one would you prefer?"}};const buttons=document.querySelectorAll(".scenario"),messages=document.querySelector("#messages");let run;function addMessage(text,type){const bubble=document.createElement("div");bubble.className=`message ${type}`;bubble.textContent=text;messages.appendChild(bubble);requestAnimationFrame(()=>bubble.classList.add("show"));return bubble}function play(key){clearTimeout(run);buttons.forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.key===key)));messages.replaceChildren();addMessage(conversations[key].user,"user");run=setTimeout(()=>{const typing=document.createElement("div");typing.className="message agent typing";typing.innerHTML="<span></span><span></span><span></span>";messages.appendChild(typing);requestAnimationFrame(()=>typing.classList.add("show"));run=setTimeout(()=>{typing.remove();addMessage(conversations[key].agent,"agent")},950)},500)}buttons.forEach(button=>button.addEventListener("click",()=>play(button.dataset.key)));document.querySelector("#whatsapp").addEventListener("click",event=>event.preventDefault());</script>
+
+<script>
+  const SUPABASE_URL = "https://arvhtltplujiwnqemdwq.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_lwE-f-JzswMr_h0Yzuzx-w_MaEm0SAh";
+
+  async function loadPilatesClasses() {
+    const output = document.querySelector("#supabase-test-output");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/class_sessions?select=title,instructor_name,start_at,end_at,location,capacity&status=eq.scheduled&order=start_at.asc&limit=6`,
+        {
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+          }
+        }
+      );
+
+      if (!response.ok) throw new Error("Could not load classes.");
+
+      const classes = await response.json();
+
+      output.textContent = classes.length
+        ? `Connected. ${classes.length} upcoming class${classes.length > 1 ? "es" : ""} found.`
+        : "Connected, but no upcoming scheduled classes were found.";
+    } catch (error) {
+      output.textContent = "Connection error. Check the Project URL, Publishable Key, and class_sessions data.";
+      console.error(error);
+    }
+  }
+
+  loadPilatesClasses();
+</script>
+<script>
+(() => {
+  const testText = document.querySelector("#supabase-test-output");
+  if (testText) testText.remove();
+
+  const chatSection = document.querySelector(".chat-section");
+  if (!chatSection || document.querySelector("#live-schedule")) return;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .live-schedule { padding-top: 0; }
+    .live-schedule .schedule-panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .schedule-head {
+      display: flex;
+      gap: 24px;
+      align-items: end;
+      justify-content: space-between;
+      padding: 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .schedule-head h2 { margin: 0; }
+    .schedule-head p { max-width: 390px; margin: 0; color: var(--muted); }
+    .schedule-list { display: grid; }
+    .schedule-row {
+      display: grid;
+      grid-template-columns: 130px 110px 1fr auto;
+      gap: 22px;
+      align-items: center;
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .schedule-row:last-child { border-bottom: 0; }
+    .schedule-date { color: var(--forest); font-weight: 700; }
+    .schedule-time { color: var(--muted); }
+    .schedule-title { margin: 0 0 5px; font-family: "Cormorant Garamond", Garamond, serif; font-size: 1.6rem; line-height: 1; }
+    .schedule-meta { margin: 0; color: var(--muted); font-size: .94rem; }
+    .schedule-register {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--forest);
+  font-weight: 700;
+  font-size: .9rem;
+  text-decoration: none;
+  transition: transform 160ms var(--ease), background-color 180ms ease;
+}
+.schedule-register:hover {
+  background: #173a2b;
+  transform: translateY(-1px);
+}
+.schedule-register:active {
+  transform: scale(.97);
+}
+    .schedule-message { padding: 32px; color: var(--muted); }
+    @media (max-width: 760px) {
+      .schedule-head { display: block; padding: 26px; }
+      .schedule-head p { margin-top: 12px; }
+      .schedule-row { grid-template-columns: 1fr; gap: 7px; padding: 23px 26px; }
+      .schedule-title { margin-top: 6px; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const section = document.createElement("section");
+  section.className = "shell live-schedule";
+  section.id = "live-schedule";
+  section.innerHTML = `
+    <div class="schedule-panel">
+      <div class="schedule-head">
+        <h2>Find your next class.</h2>
+        <p>Live studio availability, updated from the PilatesPal schedule.</p>
+      </div>
+      <div class="schedule-list" id="schedule-list" aria-live="polite">
+        <p class="schedule-message">Loading upcoming classes...</p>
+      </div>
+    </div>
+  `;
+
+  chatSection.insertAdjacentElement("beforebegin", section);
+
+  const list = document.querySelector("#schedule-list");
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatDate(value) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Jakarta",
+      weekday: "short",
+      day: "numeric",
+      month: "short"
+    }).format(new Date(value));
+  }
+
+  function formatTime(value) {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }).format(new Date(value));
+  }
+
+  async function loadLiveSchedule() {
+    if (
+      typeof SUPABASE_URL === "undefined" ||
+      typeof SUPABASE_PUBLISHABLE_KEY === "undefined"
+    ) {
+      list.innerHTML = `<p class="schedule-message">Supabase connection has not been added yet.</p>`;
+      return;
+    }
+
+    try {
+      const query = new URLSearchParams({
+        select: "title,instructor_name,location,start_at,end_at",
+        status: "eq.scheduled",
+        start_at: `gte.${new Date().toISOString()}`,
+        order: "start_at.asc",
+        limit: "6"
+      });
+
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/class_sessions?${query.toString()}`,
+        {
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+          }
+        }
+      );
+
+      if (!response.ok) throw new Error("Schedule could not be loaded.");
+
+      const classes = await response.json();
+
+      if (!classes.length) {
+        list.innerHTML = `
+          <p class="schedule-message">
+            No upcoming classes are listed yet. Please check back soon.
+          </p>
+        `;
+        return;
+      }
+
+      list.innerHTML = classes.map((item) => `
+        <article class="schedule-row">
+          <div class="schedule-date">${formatDate(item.start_at)}</div>
+          <div class="schedule-time">
+            ${formatTime(item.start_at)} - ${formatTime(item.end_at)}
+          </div>
+          <div>
+            <h3 class="schedule-title">${escapeHtml(item.title)}</h3>
+            <p class="schedule-meta">
+              ${escapeHtml(item.instructor_name || "PilatesPal instructor")}
+              ${item.location ? ` · ${escapeHtml(item.location)}` : ""}
+            </p>
+         </div>
+          <a
+            class="schedule-register"
+            href="#demo"
+            aria-label="Register for ${escapeHtml(item.title)}"
+          >
+            Register
+          </a>
+        </article>
+      `).join("");
+    } catch (error) {
+      list.innerHTML = `
+        <p class="schedule-message">
+          The schedule is temporarily unavailable. Please try again shortly.
+        </p>
+      `;
+      console.error(error);
+    }
+  }
+
+  loadLiveSchedule();
+})();
+</script>
 </body></html>
